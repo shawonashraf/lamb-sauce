@@ -30,8 +30,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: actions/configure-pages@v5
-        # Turns Pages on via the API if it isn't already, so a fresh clone or
-        # fork deploys without anyone visiting the repository settings first.
+        # Tries to turn Pages on via the API. GITHUB_TOKEN often cannot create
+        # a Pages site ("Resource not accessible by integration"), in which
+        # case enable it once with your own credentials and re-run:
+        #   gh api -X POST repos/OWNER/REPO/pages -f build_type=workflow
+        # or set Settings > Pages > Source to "GitHub Actions".
         with:
           enablement: true
 
