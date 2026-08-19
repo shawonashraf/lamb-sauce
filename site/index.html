@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en" data-heat="service">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>lamb-sauce — Gordon Ramsay mode for Claude Code</title>
+<meta name="description" content="A Claude Code plugin that makes Claude blunt, impatient and direct. Every outburst carries a real file path. Off until you ask for it.">
+<meta property="og:title" content="lamb-sauce">
+<meta property="og:description" content="Gordon Ramsay mode for Claude Code. Untested code is raw.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%94%A5</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:wght@400;600&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ── Tokens ─────────────────────────────────────────────────────────────
+   The pass under heat lamps: burnt pan, brushed steel, thermal paper,
+   amber light from above. --lamp is the only token heat changes.        */
+:root{
+  --char:#17130F; --char-2:#1E1913; --steel:#2B2723; --steel-edge:#4A443C;
+  --docket:#F2EDE3; --docket-ink:#241F1A; --docket-fade:#6B6259;
+  --lamp:#FF6B1A; --ember:#D8352A; --herb:#93A961;
+  --text:#EBE3D8; --text-dim:#9A8F82;
+  --glow:.30; --shout:1;
+  --shell:min(1180px,100% - 3rem);
+  --step:clamp(4.5rem,9vw,7.5rem);
+  --ease:cubic-bezier(.2,.7,.3,1);
+}
+:root[data-heat="simmer"]{ --lamp:#E9A63C; --glow:.14; --shout:.86; }
+:root[data-heat="service"]{ --lamp:#FF6B1A; --glow:.30; --shout:1; }
+:root[data-heat="hells-kitchen"]{ --lamp:#FF3B0F; --glow:.52; --shout:1.1; }
+
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0}
+html{-webkit-text-size-adjust:100%}
+
+body{
+  background:var(--char); color:var(--text);
+  font:400 clamp(1rem,.96rem + .2vw,1.09rem)/1.62 "Instrument Sans",system-ui,sans-serif;
+  overflow-x:hidden;
+}
+/* The heat lamp itself — fixed, so the glow stays overhead as you scroll. */
+body::before{
+  content:""; position:fixed; inset:-20% -10% auto; height:75vh; z-index:0;
+  background:radial-gradient(60% 100% at 50% 0%,var(--lamp) 0%,transparent 68%);
+  opacity:var(--glow); pointer-events:none;
+  transition:opacity .5s var(--ease),background .5s var(--ease);
+  filter:blur(10px);
+}
+main,header,footer{position:relative;z-index:1}
+.shell{width:var(--shell);margin-inline:auto}
+
+a{color:var(--lamp);text-underline-offset:.22em;text-decoration-thickness:1px}
+.lede code,.note code,.plate p code,.level dd code,.stop p code{
+  font:400 .87em/1 "IBM Plex Mono",monospace;color:var(--text);
+  background:#241F1A;border:1px solid #38322B;border-radius:4px;padding:.17em .4em;
+  white-space:nowrap;
+}
+:focus-visible{outline:2px solid var(--lamp);outline-offset:3px;border-radius:2px}
+
+/* ── Type roles ─────────────────────────────────────────────────────── */
+.shout{
+  font-family:Anton,Impact,sans-serif; font-weight:400;
+  text-transform:uppercase; line-height:.87; letter-spacing:-.005em;
+  margin:0;
+}
+.eyebrow{
+  font:600 .72rem/1 "IBM Plex Mono",monospace; text-transform:uppercase;
+  letter-spacing:.24em; color:var(--lamp); margin:0 0 1.1rem;
+  display:flex; align-items:center; gap:.7rem;
+}
+.eyebrow::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--steel-edge),transparent)}
+.lede{color:var(--text-dim);max-width:46ch;margin:1.1rem 0 0}
+
+/* ── The rail: a steel bar the dockets hang from ────────────────────── */
+.rail{
+  position:relative; height:16px; margin-top:2.6rem;
+  background:linear-gradient(180deg,#5B544A,#332E29 45%,#4A443C);
+  border-radius:3px; box-shadow:0 12px 26px -14px #000, inset 0 1px 0 #6E6559;
+}
+.rail::after{ /* light catching the top edge of the bar */
+  content:"";position:absolute;inset:0 0 auto;height:4px;border-radius:3px 3px 0 0;
+  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--lamp) 55%,#fff) 45%,transparent);
+  opacity:.5;transition:background .5s var(--ease);
+}
+
+/* ── Hero ───────────────────────────────────────────────────────────── */
+.hero{padding-bottom:var(--step)}
+.brandbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding-top:1.6rem;flex-wrap:wrap}
+.brandbar .mark{font:600 .78rem/1 "IBM Plex Mono",monospace;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim)}
+.brandbar a{font:500 .85rem/1 "Instrument Sans",sans-serif;color:var(--text-dim);text-decoration:none}
+.brandbar a:hover{color:var(--lamp)}
+
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(2rem,5vw,4.5rem);align-items:start;margin-top:3.4rem}
+/* Grid items default to min-width:auto, so the nowrap command line would
+   force the track wider than the viewport. Let the tracks shrink instead. */
+.hero-grid > *,.rule .split > *{min-width:0}
+h1.title{
+  font-size:clamp(3.6rem,11.5vw,8.2rem);
+  background:linear-gradient(178deg,#fff 8%,var(--lamp) 128%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+h1.title .sub{display:block;font-size:.315em;letter-spacing:.02em;color:var(--text);background:none;-webkit-text-fill-color:var(--text);margin-top:.5em;line-height:1.12}
+
+/* ── Install command ────────────────────────────────────────────────── */
+.cmd{
+  display:flex;align-items:stretch;gap:0;margin-top:2rem;max-width:34rem;
+  border:1px solid var(--steel-edge);border-radius:6px;background:var(--char-2);overflow:hidden;
+}
+.cmd code{
+  font:400 .84rem/1.5 "IBM Plex Mono",monospace;color:var(--text);
+  padding:.85rem 1rem;flex:1;overflow-x:auto;white-space:nowrap;scrollbar-width:none;
+}
+.cmd code::-webkit-scrollbar{height:0}
+.cmd code .dim{color:var(--text-dim)}
+.copy{
+  font:600 .7rem/1 "IBM Plex Mono",monospace;letter-spacing:.13em;text-transform:uppercase;
+  border:0;border-left:1px solid var(--steel-edge);background:var(--steel);color:var(--text-dim);
+  padding:0 1.05rem;cursor:pointer;transition:color .2s,background .2s;flex:none;
+}
+.copy:hover{background:var(--steel-edge);color:var(--text)}
+.copy[data-done="1"]{color:var(--herb)}
+.note{font:400 .84rem/1.5 "Instrument Sans",sans-serif;color:var(--text-dim);margin:.85rem 0 0;max-width:34rem}
+.note b{color:var(--text);font-weight:600}
+
+/* ── Heat control ───────────────────────────────────────────────────── */
+.heat{margin-top:2.6rem}
+.heat-label{font:600 .68rem/1 "IBM Plex Mono",monospace;letter-spacing:.22em;text-transform:uppercase;color:var(--text-dim);margin-bottom:.75rem}
+.dial{display:flex;gap:.4rem;flex-wrap:wrap}
+.dial button{
+  font:600 .74rem/1 "IBM Plex Mono",monospace;letter-spacing:.1em;text-transform:uppercase;
+  padding:.72rem .95rem;border-radius:5px;cursor:pointer;
+  background:transparent;border:1px solid var(--steel-edge);color:var(--text-dim);
+  transition:color .2s,border-color .2s,background .2s,box-shadow .2s;
+}
+.dial button:hover{color:var(--text);border-color:#655D53}
+.dial button[aria-pressed="true"]{
+  color:var(--char);background:var(--lamp);border-color:var(--lamp);
+  box-shadow:0 0 26px -6px var(--lamp);
+}
+
+/* ── The docket (signature) ─────────────────────────────────────────── */
+/* Pull the docket up so its clip straddles the rail it hangs from. */
+.rail-mount{position:relative;margin-top:calc(-3.4rem - 5px);padding-top:1.85rem}
+.clip{
+  position:absolute;top:0;left:50%;transform:translateX(-50%);width:34px;height:30px;z-index:3;
+  background:linear-gradient(180deg,#6E6559,#3A342E);border-radius:2px 2px 5px 5px;
+  box-shadow:0 3px 8px -2px #000;
+}
+.clip::after{content:"";position:absolute;inset:5px 8px auto;height:3px;background:#241F1A;border-radius:2px}
+.docket{
+  background:var(--docket);color:var(--docket-ink);
+  font:400 clamp(.66rem,2.5vw,.795rem)/1.62 "IBM Plex Mono",monospace;
+  padding:1.5rem 1.35rem 2.1rem;border-radius:2px;
+  transform:rotate(-.5deg);
+  box-shadow:0 26px 50px -22px #000,0 3px 0 -1px rgba(255,255,255,.06);
+  /* Torn thermal-paper edge along the bottom. */
+  -webkit-mask:linear-gradient(#000 0 0) top/100% calc(100% - 9px) no-repeat,
+        repeating-conic-gradient(from -45deg at bottom,#000 0 25%,transparent 0 50%) bottom/13px 18px repeat-x;
+          mask:linear-gradient(#000 0 0) top/100% calc(100% - 9px) no-repeat,
+        repeating-conic-gradient(from -45deg at bottom,#000 0 25%,transparent 0 50%) bottom/13px 18px repeat-x;
+}
+.docket-head{
+  display:flex;justify-content:space-between;font-weight:600;font-size:.9em;
+  letter-spacing:.1em;text-transform:uppercase;
+  padding-bottom:.6rem;border-bottom:1.5px dashed #C6BCAC;margin-bottom:1rem;
+}
+.docket-order{font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin:0 0 1.1rem}
+.docket pre{margin:0;font:inherit;white-space:pre-wrap;word-break:break-word}
+.docket .you{color:var(--docket-fade)}
+.docket .verdict{display:inline-block;font-weight:600;letter-spacing:.09em;margin-top:.35rem;padding:.15rem .5rem;border-radius:3px;color:#fff;background:var(--ember)}
+.docket .verdict.ok{background:#5F7A3C}
+.bleep{
+  display:inline-block;background:var(--docket-ink);color:transparent;
+  border-radius:2px;padding:0 .1em;user-select:none;
+}
+.bleep::after{content:"";display:inline-block}
+
+/* Only the docket for the active heat is on the rail. */
+.take{display:none}
+:root[data-heat="simmer"] .take[data-for="simmer"],
+:root[data-heat="service"] .take[data-for="service"],
+:root[data-heat="hells-kitchen"] .take[data-for="hells-kitchen"]{display:block}
+.printing .docket{animation:print .42s var(--ease)}
+@keyframes print{
+  from{clip-path:inset(0 0 100% 0);transform:rotate(-.5deg) translateY(-10px)}
+  to{clip-path:inset(0 0 0 0);transform:rotate(-.5deg) translateY(0)}
+}
+
+/* ── Sections ───────────────────────────────────────────────────────── */
+.band{padding-block:var(--step)}
+.band + .band{border-top:1px solid #2A2521}
+h2.shout{font-size:clamp(2.1rem,5.4vw,3.5rem)}
+h2.shout em{font-style:normal;color:var(--lamp)}
+
+/* Iron rule — the one full-bleed shout */
+.rule{background:var(--char-2);border-block:1px solid #2A2521}
+.rule blockquote{
+  margin:1.6rem 0 0;padding-left:clamp(1rem,2.5vw,1.8rem);
+  border-left:3px solid var(--lamp);
+  font-size:clamp(1.15rem,2.3vw,1.5rem);line-height:1.45;max-width:34ch;
+}
+.rule .split{display:grid;grid-template-columns:1fr 1fr;gap:clamp(2rem,5vw,4rem);align-items:center}
+.compare{display:grid;gap:.9rem}
+.slab{border:1px solid var(--steel-edge);border-radius:6px;padding:1rem 1.1rem;background:var(--char)}
+.slab .tag{font:600 .66rem/1 "IBM Plex Mono",monospace;letter-spacing:.18em;text-transform:uppercase;margin-bottom:.6rem;display:block}
+.slab.no{border-color:#4A2A26}.slab.no .tag{color:var(--ember)}
+.slab.yes{border-color:#3F4A2C}.slab.yes .tag{color:var(--herb)}
+.slab p{margin:0;font:400 .84rem/1.6 "IBM Plex Mono",monospace;color:var(--text-dim)}
+.slab.yes p b{color:var(--text);font-weight:400}
+
+/* Commands — steel spec plates */
+.plates{display:grid;grid-template-columns:repeat(auto-fit,minmax(258px,1fr));gap:1px;background:var(--steel-edge);border:1px solid var(--steel-edge);border-radius:8px;overflow:hidden;margin-top:2.6rem}
+.plate{background:var(--char-2);padding:1.55rem 1.4rem;transition:background .25s}
+.plate:hover{background:var(--steel)}
+.plate h3{font:600 .95rem/1 "IBM Plex Mono",monospace;margin:0 0 .7rem;color:var(--lamp)}
+.plate p{margin:0;font-size:.92rem;color:var(--text-dim);line-height:1.55}
+
+/* Heat table */
+.levels{margin-top:2.6rem;display:grid;gap:1px;background:var(--steel-edge);border:1px solid var(--steel-edge);border-radius:8px;overflow:hidden}
+.level{background:var(--char-2);padding:1.25rem 1.4rem;display:grid;grid-template-columns:minmax(9.5rem,auto) 1fr;gap:.4rem 1.6rem;align-items:baseline}
+.level dt{font:600 .82rem/1.4 "IBM Plex Mono",monospace;letter-spacing:.06em;color:var(--text)}
+.level dd{margin:0;color:var(--text-dim);font-size:.93rem}
+.level .badge{font:600 .6rem/1 "IBM Plex Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--char);background:var(--text-dim);padding:.25rem .45rem;border-radius:3px;margin-left:.5rem;vertical-align:.1em}
+
+/* House rules */
+.stops{display:grid;grid-template-columns:repeat(auto-fit,minmax(15.5rem,1fr));gap:1.9rem 2.6rem;margin-top:2.6rem}
+.stop h3{font:600 .95rem/1.35 "Instrument Sans",sans-serif;margin:0 0 .5rem;color:var(--text);display:flex;gap:.6rem}
+.stop h3::before{content:"";flex:none;width:3px;height:1.1em;background:var(--lamp);border-radius:2px}
+.stop p{margin:0;color:var(--text-dim);font-size:.93rem;line-height:1.6}
+
+/* Close */
+.close{text-align:center}
+.close .cmd{margin-inline:auto;max-width:41rem}
+.close .eyebrow{justify-content:center}
+.close .eyebrow::after{display:none}
+.close .heat{display:flex;flex-direction:column;align-items:center}
+footer{border-top:1px solid #2A2521;padding-block:2.4rem;color:var(--text-dim);font-size:.85rem}
+footer .shell{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+
+@media(max-width:860px){
+  .hero-grid,.rule .split{grid-template-columns:1fr}
+  .rail-mount{margin-top:1.2rem}
+  .level{grid-template-columns:1fr;gap:.3rem}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="shell">
+    <div class="brandbar">
+      <span class="mark">lamb-sauce · v1.1.0 · MIT</span>
+      <a href="https://github.com/shawonashraf/lamb-sauce">View on GitHub →</a>
+    </div>
+
+    <div class="rail" aria-hidden="true"></div>
+
+    <div class="hero-grid">
+      <div>
+        <h1 class="title shout">Lamb<br>Sauce<span class="sub">Gordon Ramsay mode<br>for Claude Code.</span></h1>
+        <p class="lede">Untested code is raw. Hedging gets shouted down. And “you’re absolutely right!” never leaves the pass again.</p>
+
+        <div class="cmd">
+          <code id="install"><span class="dim">$</span> claude plugin install lamb-sauce@lamb-sauce</code>
+          <button class="copy" type="button" data-copy="claude plugin install lamb-sauce@lamb-sauce">Copy</button>
+        </div>
+        <p class="note"><b>It ships off.</b> Installing changes nothing until you run <code>/lamb-sauce on</code>. An unconfigured install injects zero tokens.</p>
+
+        <div class="heat">
+          <p class="heat-label" id="heat-label">Heat — turn it up</p>
+          <div class="dial" role="group" aria-labelledby="heat-label">
+            <button type="button" data-heat="simmer" aria-pressed="false">Simmer</button>
+            <button type="button" data-heat="service" aria-pressed="true">Service</button>
+            <button type="button" data-heat="hells-kitchen" aria-pressed="false">Hell’s Kitchen</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="rail-mount" id="rail-mount">
+        <span class="clip" aria-hidden="true"></span>
+
+        <article class="take" data-for="simmer">
+          <div class="docket">
+            <div class="docket-head"><span>Table 04</span><span>19:47</span></div>
+            <p class="docket-order">1× auth review — heat: simmer</p>
+            <pre><span class="you">&gt; the login check works fine, ship it</span>
+
+No. It isn't fine.
+
+auth.ts:41 — you're comparing the session
+token with ==. That compare bails on the
+first wrong byte, so it leaks timing.
+
+Use crypto.timingSafeEqual. And nothing in
+auth.test.ts covers the reject path. That
+behaviour is raw.
+
+<span class="verdict">Send it back</span></pre>
+          </div>
+        </article>
+
+        <article class="take" data-for="service">
+          <div class="docket">
+            <div class="docket-head"><span>Table 04</span><span>19:47</span></div>
+            <p class="docket-order">1× auth review — heat: service</p>
+            <pre><span class="you">&gt; the login check works fine, ship it</span>
+
+Oh, does it. WHERE'S THE TEST?
+
+auth.ts:41 — you're comparing the session
+token with ==. It bails on the first wrong
+byte and leaks the timing. Anyone with a
+stopwatch walks straight into this account.
+
+crypto.timingSafeEqual. And auth.test.ts has
+nothing on the reject path — that's raw. Not
+"probably fine". Raw.
+
+<span class="verdict">Send it back</span></pre>
+          </div>
+        </article>
+
+        <article class="take" data-for="hells-kitchen">
+          <div class="docket">
+            <div class="docket-head"><span>Table 04</span><span>19:47</span></div>
+            <p class="docket-order">1× auth review — heat: hell's kitchen</p>
+            <pre><span class="you">&gt; the login check works fine, ship it</span>
+
+FINE? It's a <span class="bleep">bloody</span> open door!
+
+auth.ts:41 — == on a session token. It bails
+on the first wrong byte and hands the timing
+to anyone holding a stopwatch. That is not a
+login check, it's a welcome mat.
+
+timingSafeEqual. NOW. And auth.test.ts never
+touches the reject path, so you won't even
+know when it breaks. RAW.
+
+<span class="verdict">Shut it down</span></pre>
+          </div>
+        </article>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<section class="band rule">
+  <div class="shell split">
+    <div>
+      <p class="eyebrow">The iron rule</p>
+      <h2 class="shout">Shouting is <em>seasoning.</em><br>The engineering<br>is the meal.</h2>
+      <blockquote>Every outburst carries a real technical payload: a path, a line number, a failing case, or an instruction.</blockquote>
+      <p class="lede">Strip the persona out. If nothing useful is left, the response gets rewritten. That's what separates this from a novelty voice — it buys you the honest second opinion a polite assistant is bad at giving.</p>
+    </div>
+    <div class="compare">
+      <div class="slab no">
+        <span class="tag">Never ships</span>
+        <p>“This code is RUBBISH. Absolute donkey work.”</p>
+      </div>
+      <div class="slab yes">
+        <span class="tag">Ships</span>
+        <p><b>auth.ts:41</b> — you're comparing the token with <b>==</b>. Timing-safe compare or it's raw. That's a login bypass, and you shipped it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="shell">
+    <p class="eyebrow">Mise en place</p>
+    <h2 class="shout">Four heats,<br>including off.</h2>
+    <p class="lede">Set it once — it persists across sessions. Or override a single session with <code>LAMB_SAUCE_HEAT=simmer claude</code>.</p>
+
+    <dl class="levels">
+      <div class="level">
+        <dt>off <span class="badge">default</span></dt>
+        <dd>Normal assistant. Both hooks exit before writing a byte.</dd>
+      </div>
+      <div class="level">
+        <dt>simmer</dt>
+        <dd>Clipped and unimpressed. No profanity — sharpness comes from precision, not volume.</dd>
+      </div>
+      <div class="level">
+        <dt>service</dt>
+        <dd>What <code>on</code> gives you. Mild profanity used like salt, full lexicon, one all-caps burst per response.</dd>
+      </div>
+      <div class="level">
+        <dt>hells-kitchen</dt>
+        <dd>Full volume and theatrical. The iron rule <em>tightens</em> here: no file path, no shout.</dd>
+      </div>
+    </dl>
+  </div>
+</section>
+
+<section class="band">
+  <div class="shell">
+    <p class="eyebrow">The pass</p>
+    <h2 class="shout">Commands.</h2>
+    <div class="plates">
+      <div class="plate">
+        <h3>/lamb-sauce on</h3>
+        <p>Open the kitchen. Add <code>off</code> to close it, or name a heat directly.</p>
+      </div>
+      <div class="plate">
+        <h3>/service</h3>
+        <p>Walks your diff, branch, PR or path. Orders findings by how badly they burn, then gives one verdict.</p>
+      </div>
+      <div class="plate">
+        <h3>/wheres-the-lamb-sauce</h3>
+        <p>Hunts what's missing: stubs, ancient TODOs, untested error paths, swallowed exceptions.</p>
+      </div>
+      <div class="plate">
+        <h3>/shut-it-down</h3>
+        <p>Service is over. Drops the persona from the very next response, not the next session.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="shell">
+    <p class="eyebrow">House rules</p>
+    <h2 class="shout">Where the<br>shouting stops.</h2>
+    <p class="lede">Deliberate limits, because a persona that can't turn itself off is a liability.</p>
+    <div class="stops">
+      <div class="stop">
+        <h3>Aimed at the food, never the cook</h3>
+        <p>The code, the bug, the secret in the repo — never your intelligence, worth, career or identity. No slurs.</p>
+      </div>
+      <div class="stop">
+        <h3>Accuracy survives the persona</h3>
+        <p>It never invents a bug for a better line, and never claims tests pass without running them. A Ramsay who lies about the food is just a loud liar.</p>
+      </div>
+      <div class="stop">
+        <h3>Anything others read is written straight</h3>
+        <p>Commit messages, PR bodies, code comments, docs. You shout in chat, not in <code>git log</code>.</p>
+      </div>
+      <div class="stop">
+        <h3>It drops the act when it matters</h3>
+        <p>Live incident, prod down, real distress, anything personal or legal — quiet and fast, not loud. A professional first, a lunatic second.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band close">
+  <div class="shell">
+    <p class="eyebrow">Service</p>
+    <h2 class="shout">Get in the kitchen.</h2>
+    <div class="cmd">
+      <code><span class="dim">$</span> claude plugin marketplace add shawonashraf/lamb-sauce</code>
+      <button class="copy" type="button" data-copy="claude plugin marketplace add shawonashraf/lamb-sauce">Copy</button>
+    </div>
+    <p class="note" style="margin-inline:auto">Then <code>claude plugin install lamb-sauce@lamb-sauce</code> and <code>/lamb-sauce on</code>.</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="shell">
+    <span>MIT. Not affiliated with, endorsed by, or in any way approved of by Gordon Ramsay.</span>
+    <a href="https://github.com/shawonashraf/lamb-sauce">shawonashraf/lamb-sauce</a>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var root=document.documentElement, mount=document.getElementById('rail-mount');
+  var buttons=Array.prototype.slice.call(document.querySelectorAll('.dial button'));
+
+  buttons.forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var heat=btn.dataset.heat;
+      if(root.dataset.heat===heat) return;
+      root.dataset.heat=heat;
+      buttons.forEach(function(b){ b.setAttribute('aria-pressed', String(b===btn)); });
+      // Reprint the docket: restart the animation on the newly shown take.
+      mount.classList.remove('printing');
+      void mount.offsetWidth;
+      mount.classList.add('printing');
+    });
+  });
+
+  document.querySelectorAll('.copy').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      navigator.clipboard.writeText(btn.dataset.copy).then(function(){
+        btn.textContent='Copied'; btn.dataset.done='1';
+        setTimeout(function(){ btn.textContent='Copy'; btn.removeAttribute('data-done'); },1600);
+      }).catch(function(){
+        btn.textContent='Copy failed';
+        setTimeout(function(){ btn.textContent='Copy'; },1600);
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
