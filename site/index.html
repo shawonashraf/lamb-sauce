@@ -107,12 +107,16 @@ h1.title .sub{display:block;font-size:.315em;letter-spacing:.02em;color:var(--te
   display:flex;align-items:stretch;gap:0;margin-top:2rem;max-width:34rem;
   border:1px solid var(--steel-edge);border-radius:6px;background:var(--char-2);overflow:hidden;
 }
-.cmd code{
-  font:400 .84rem/1.5 "IBM Plex Mono",monospace;color:var(--text);
-  padding:.85rem 1rem;flex:1;overflow-x:auto;white-space:nowrap;scrollbar-width:none;
+.cmd-lines{
+  flex:1;min-width:0;padding:.8rem 1rem;overflow-x:auto;scrollbar-width:none;
+  display:grid;gap:.3rem;
 }
-.cmd code::-webkit-scrollbar{height:0}
-.cmd code .dim{color:var(--text-dim)}
+.cmd-lines::-webkit-scrollbar{height:0}
+.cmd-lines code{
+  font:400 .84rem/1.5 "IBM Plex Mono",monospace;color:var(--text);
+  display:block;white-space:nowrap;
+}
+.cmd-lines .dim{color:var(--text-dim);user-select:none}
 .copy{
   font:600 .7rem/1 "IBM Plex Mono",monospace;letter-spacing:.13em;text-transform:uppercase;
   border:0;border-left:1px solid var(--steel-edge);background:var(--steel);color:var(--text-dim);
@@ -265,10 +269,14 @@ footer .shell{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap
         <p class="lede">Untested code is raw. Hedging gets shouted down. And “you’re absolutely right!” never leaves the pass again.</p>
 
         <div class="cmd">
-          <code id="install"><span class="dim">$</span> claude plugin install lamb-sauce@lamb-sauce</code>
-          <button class="copy" type="button" data-copy="claude plugin install lamb-sauce@lamb-sauce">Copy</button>
+          <div class="cmd-lines">
+            <code><span class="dim">$</span> claude plugin marketplace add shawonashraf/lamb-sauce</code>
+            <code><span class="dim">$</span> claude plugin install lamb-sauce@lamb-sauce</code>
+          </div>
+          <button class="copy" type="button" data-copy="claude plugin marketplace add shawonashraf/lamb-sauce&#10;claude plugin install lamb-sauce@lamb-sauce">Copy</button>
         </div>
-        <p class="note"><b>It ships off.</b> Installing changes nothing until you run <code>/lamb-sauce on</code>. An unconfigured install injects zero tokens.</p>
+        <p class="note">The first line registers this repo as a plugin marketplace; the second installs from it. No npm, no registry — it resolves straight from git.</p>
+        <p class="note"><b>It ships off.</b> Nothing changes until you run <code>/lamb-sauce on</code> inside Claude Code. An unconfigured install injects zero tokens.</p>
 
         <div class="heat">
           <p class="heat-label" id="heat-label">Heat — turn it up</p>
@@ -455,10 +463,13 @@ know when it breaks. RAW.
     <p class="eyebrow">Service</p>
     <h2 class="shout">Get in the kitchen.</h2>
     <div class="cmd">
-      <code><span class="dim">$</span> claude plugin marketplace add shawonashraf/lamb-sauce</code>
-      <button class="copy" type="button" data-copy="claude plugin marketplace add shawonashraf/lamb-sauce">Copy</button>
+      <div class="cmd-lines">
+        <code><span class="dim">$</span> claude plugin marketplace add shawonashraf/lamb-sauce</code>
+        <code><span class="dim">$</span> claude plugin install lamb-sauce@lamb-sauce</code>
+      </div>
+      <button class="copy" type="button" data-copy="claude plugin marketplace add shawonashraf/lamb-sauce&#10;claude plugin install lamb-sauce@lamb-sauce">Copy</button>
     </div>
-    <p class="note" style="margin-inline:auto">Then <code>claude plugin install lamb-sauce@lamb-sauce</code> and <code>/lamb-sauce on</code>.</p>
+    <p class="note" style="margin-inline:auto">Then restart your session and run <code>/lamb-sauce on</code>.</p>
   </div>
 </section>
 
