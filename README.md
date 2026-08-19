@@ -40,31 +40,39 @@ claude plugin marketplace add shawonashraf/lamb-sauce
 claude plugin install lamb-sauce@lamb-sauce
 ```
 
-Restart your session. The kitchen opens automatically.
+**It ships off.** Installing it changes nothing until you say so — an unconfigured
+install injects zero tokens. Open the kitchen when you want it:
+
+```
+/lamb-sauce on      # or just /lamb-sauce
+/lamb-sauce off     # close it again
+```
+
+The setting persists across sessions, so you set it once.
 
 ## Heat levels
 
 | Level | What you get |
 |---|---|
+| `off` | **The default.** Normal assistant, zero token cost. |
 | `simmer` 🌡️ | Clipped and unimpressed. **No profanity.** Sharpness from precision, not volume. |
-| `service` 🔥 | **Default.** Real Ramsay. Mild profanity used like salt, full lexicon, one ALL-CAPS burst per response. |
+| `service` 🔥 | What `on` gives you. Real Ramsay: mild profanity used like salt, full lexicon, one ALL-CAPS burst per response. |
 | `hells-kitchen` 🌋 | Full volume, strong profanity, theatrical. The Iron Rule *tightens* here — no path, no shout. |
-| `off` | Normal assistant. |
 
 ```bash
-/lamb-sauce hells-kitchen      # or simmer / service / off
-/shut-it-down                  # kill it entirely
+/lamb-sauce hells-kitchen      # or on / off / simmer / service
+/shut-it-down                  # close the kitchen
 ```
 
-Set it outside a session with `bash scripts/heat.sh set simmer`, or override per
-session with `LAMB_SAUCE_HEAT=simmer claude`. Precedence: env var → saved state →
-`service`. State lives in `~/.claude/.lamb-sauce-heat`.
+Outside a session: `bash scripts/heat.sh on|off|toggle`, or `heat.sh set simmer`.
+Per session: `LAMB_SAUCE_HEAT=simmer claude`. Precedence is env var → saved state
+→ `off`, and the state is one line in `~/.claude/.lamb-sauce-heat`.
 
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `/lamb-sauce [heat]` | Turn it on, or change the heat |
+| `/lamb-sauce [on\|off\|heat]` | Toggle it, or change the heat |
 | `/service [target]` | Walk the current diff, branch, PR or path — full review, one verdict |
 | `/wheres-the-lamb-sauce [path]` | Hunt what's missing: stubs, ancient TODOs, untested error paths, swallowed exceptions |
 | `/shut-it-down` | Service is over |
@@ -88,14 +96,16 @@ Deliberate limits, because a persona that can't turn itself off is a liability:
 
 | Piece | Role |
 |---|---|
-| `hooks/session-start.sh` | Injects `persona/base.md` + `persona/<heat>.md` at session start (~1.1k tokens, harness-side) |
+| `hooks/session-start.sh` | Injects `persona/base.md` + `persona/<heat>.md` at session start (~1.1k tokens, harness-side). Exits silently when off. |
 | `hooks/user-prompt-submit.sh` | One-line anti-drift reminder each turn — the thing that stops persona decay by turn 20 |
 | `persona/*.md` | The ruleset. **Edit these to retune the character** — no code changes needed |
 | `skills/lamb-sauce` | The persona, invocable on demand ("be brutal", "roast my code") |
 | `skills/kitchen-inspection` | The review method: open the fridge, taste everything, one verdict |
-| `scripts/heat.sh` | Heat get/set with forgiving aliases (`hell`, `max`, `mild`, `on`…) |
+| `scripts/heat.sh` | `on` / `off` / `toggle` / `set <level>`, with forgiving aliases (`hell`, `max`, `mild`, `quiet`…) |
 
-Always-on cost is ~520 tokens of skill metadata plus the persona injection.
+Turned off, the cost is ~520 tokens of skill metadata and nothing else — the
+hooks exit before writing a byte. Turned on, add ~1.1k for the persona injection
+plus a one-line reminder per turn.
 
 ### Optional statusline badge
 

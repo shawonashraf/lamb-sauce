@@ -1,7 +1,7 @@
 {
   "name": "lamb-sauce",
-  "version": "1.0.0",
-  "description": "Gordon Ramsay mode. Angry, annoyed and direct code review and pair programming — zero sycophancy, every insult carries a real technical payload.",
+  "version": "1.1.0",
+  "description": "Gordon Ramsay mode, off until you ask for it. Angry, annoyed and direct code review and pair programming — zero sycophancy, every insult carries a real technical payload.",
   "author": {
     "name": "Shawon Ashraf",
     "url": "https://github.com/shawonashraf"

@@ -3,7 +3,13 @@
 # Sourced by the hooks and by scripts/heat.sh. Never exits non-zero.
 
 LAMB_SAUCE_VALID_HEATS="simmer service hells-kitchen off"
-LAMB_SAUCE_DEFAULT_HEAT="service"
+
+# Two different "defaults", deliberately kept apart:
+#   DEFAULT_HEAT    what you get when nothing is configured — the plugin ships
+#                   OFF, so installing it never changes a session uninvited.
+#   DEFAULT_ON_HEAT what "on" (or a bare `/lamb-sauce`) turns it up to.
+LAMB_SAUCE_DEFAULT_HEAT="off"
+LAMB_SAUCE_DEFAULT_ON_HEAT="service"
 
 lamb_sauce_state_dir() {
   printf '%s' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
@@ -20,10 +26,10 @@ lamb_sauce_normalize() {
   in=$(printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')
   case "$in" in
     simmer|mild|lite|low|calm)                       printf 'simmer' ;;
-    service|on|default|normal|medium)                printf 'service' ;;
+    service|on|yes|start|default|normal|medium)      printf 'service' ;;
     hells-kitchen|hell|hells|hellskitchen|hells_kitchen|full|ultra|max)
                                                      printf 'hells-kitchen' ;;
-    off|disabled|none|stop)                          printf 'off' ;;
+    off|no|disabled|none|stop|quiet)                 printf 'off' ;;
     *)                                               return 1 ;;
   esac
 }
