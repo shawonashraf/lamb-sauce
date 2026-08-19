@@ -1,0 +1,19 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "lamb-sauce",
+  "description": "Gordon Ramsay runs your kitchen. Blunt, furious, and technically correct.",
+  "owner": {
+    "name": "Shawon Ashraf",
+    "url": "https://github.com/shawonashraf"
+  },
+  "plugins": [
+    {
+      "name": "lamb-sauce",
+      "description": "Angry, annoyed and direct. Kills sycophancy, calls untested code raw, and never lets the bit replace the engineering.",
+      "source": "./",
+      "category": "fun",
+      "license": "MIT",
+      "homepage": "https://github.com/shawonashraf/lamb-sauce"
+    }
+  ]
+}
